@@ -34,62 +34,144 @@ export const useSocket = () => {
 };
 
 export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+
   const [socket, setSocket] = useState<GameSocket | null>(null);
   const [room, setRoom] = useState<Room | null>(null);
   const [playerId, setPlayerId] = useState<string | null>(null);
   const [isConnected, setIsConnected] = useState(false);
 
   useEffect(() => {
+
     const s = io(SOCKET_URL, { autoConnect: true }) as GameSocket;
+
     setSocket(s);
 
     s.on('connect', () => {
+
       setIsConnected(true);
-      setPlayerId(s.id ?? null);
+
+      // Always sync playerId with socket id
+      if (s.id) {
+        setPlayerId(s.id);
+      }
+
     });
 
-    s.on('disconnect', () => setIsConnected(false));
+    s.on('disconnect', () => {
+
+      setIsConnected(false);
+
+    });
 
     s.on('room-updated', (updatedRoom) => {
+
       setRoom(updatedRoom);
+
+      // Ensure playerId always stays synced
+      if (s.id) {
+        setPlayerId(s.id);
+      }
+
     });
 
     s.on('error', (message) => {
+
       toast.error(message);
+
     });
 
     return () => {
+
       s.disconnect();
+
     };
+
   }, []);
 
   const createRoom = useCallback((playerName: string) => {
+
     socket?.emit('create-room', playerName);
+
   }, [socket]);
 
   const joinRoom = useCallback((roomCode: string, playerName: string) => {
+
     socket?.emit('join-room', { roomCode, playerName });
+
   }, [socket]);
 
-  const startSetup = useCallback(() => socket?.emit('start-setup'), [socket]);
-  const addCharacter = useCallback((name: string, imageUrl: string) => {
-    socket?.emit('add-character', { name, imageUrl });
+  const startSetup = useCallback(() => {
+    socket?.emit('start-setup');
   }, [socket]);
-  const removeCharacter = useCallback((id: string) => socket?.emit('remove-character', id), [socket]);
-  const finishSetup = useCallback(() => socket?.emit('finish-setup'), [socket]);
-  const selectCharacter = useCallback((id: string) => socket?.emit('select-character', id), [socket]);
-  const eliminateCharacter = useCallback((id: string) => socket?.emit('eliminate-character', id), [socket]);
-  const restoreCharacter = useCallback((id: string) => socket?.emit('restore-character', id), [socket]);
-  const guessCharacter = useCallback((id: string) => socket?.emit('guess-character', id), [socket]);
-  const rematch = useCallback(() => socket?.emit('rematch'), [socket]);
+
+  const addCharacter = useCallback((name: string, imageUrl: string) => {
+
+    socket?.emit('add-character', { name, imageUrl });
+
+  }, [socket]);
+
+  const removeCharacter = useCallback((characterId: string) => {
+
+    socket?.emit('remove-character', characterId);
+
+  }, [socket]);
+
+  const finishSetup = useCallback(() => {
+
+    socket?.emit('finish-setup');
+
+  }, [socket]);
+
+  const selectCharacter = useCallback((characterId: string) => {
+
+    socket?.emit('select-character', characterId);
+
+  }, [socket]);
+
+  const eliminateCharacter = useCallback((characterId: string) => {
+
+    socket?.emit('eliminate-character', characterId);
+
+  }, [socket]);
+
+  const restoreCharacter = useCallback((characterId: string) => {
+
+    socket?.emit('restore-character', characterId);
+
+  }, [socket]);
+
+  const guessCharacter = useCallback((characterId: string) => {
+
+    socket?.emit('guess-character', characterId);
+
+  }, [socket]);
+
+  const rematch = useCallback(() => {
+
+    socket?.emit('rematch');
+
+  }, [socket]);
 
   return (
-    <SocketContext.Provider value={{
-      socket, room, playerId, isConnected,
-      createRoom, joinRoom, startSetup, addCharacter, removeCharacter,
-      finishSetup, selectCharacter, eliminateCharacter, restoreCharacter,
-      guessCharacter, rematch,
-    }}>
+    <SocketContext.Provider
+      value={{
+        socket,
+        room,
+        playerId,
+        isConnected,
+        createRoom,
+        joinRoom,
+        startSetup,
+        addCharacter,
+        removeCharacter,
+        finishSetup,
+        selectCharacter,
+        eliminateCharacter,
+        restoreCharacter,
+        guessCharacter,
+        rematch,
+      }}
+    >
       {children}
     </SocketContext.Provider>
   );

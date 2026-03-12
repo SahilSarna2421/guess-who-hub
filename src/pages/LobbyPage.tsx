@@ -6,21 +6,23 @@ import { Copy, Users, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 const LobbyPage = () => {
-  const { room, playerId } = useSocket();
+  const { room, playerId, startSetup } = useSocket();
   const navigate = useNavigate();
 
   const currentPlayer = room?.players.find(p => p.id === playerId);
   const isHost = currentPlayer?.isHost ?? false;
 
   useEffect(() => {
-    if (!room) {
-      navigate('/');
-      return;
+    if (!room) return;
+
+    if (room.phase === 'board-setup') {
+      navigate('/setup');
+    } else if (room.phase === 'character-selection') {
+      navigate('/select');
+    } else if (room.phase === 'playing') {
+      navigate('/game');
     }
-    if (room.phase === 'board-setup') navigate('/setup');
-    if (room.phase === 'character-selection') navigate('/select');
-    if (room.phase === 'playing') navigate('/game');
-  }, [room, navigate]);
+  }, [room?.phase, navigate]);
 
   const copyCode = () => {
     if (room?.code) {
@@ -28,8 +30,6 @@ const LobbyPage = () => {
       toast.success('Room code copied!');
     }
   };
-
-  const { startSetup } = useSocket();
 
   if (!room) return null;
 
@@ -59,7 +59,9 @@ const LobbyPage = () => {
                 <div key={p.id} className="flex items-center justify-between rounded-lg bg-muted px-4 py-2.5">
                   <span className="font-medium text-foreground">{p.name}</span>
                   {p.isHost && (
-                    <span className="rounded-full bg-primary px-2.5 py-0.5 text-xs font-medium text-primary-foreground">Host</span>
+                    <span className="rounded-full bg-primary px-2.5 py-0.5 text-xs font-medium text-primary-foreground">
+                      Host
+                    </span>
                   )}
                 </div>
               ))}
@@ -72,7 +74,10 @@ const LobbyPage = () => {
               <span className="text-sm">Waiting for another player...</span>
             </div>
           ) : isHost ? (
-            <Button onClick={startSetup} className="w-full h-11 gradient-primary text-primary-foreground font-semibold">
+            <Button
+              onClick={startSetup}
+              className="w-full h-11 gradient-primary text-primary-foreground font-semibold"
+            >
               Start Board Setup
             </Button>
           ) : (
